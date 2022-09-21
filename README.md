@@ -10,5 +10,5 @@
 ![image](https://user-images.githubusercontent.com/78210333/190935714-d0eb404f-8e58-44de-99a2-49d8b121035b.png)
 
 ### R2 Score
-* 수온 : 0.9629
-* 질산질소 : 0.9296
+* 수온 : 0.981
+* 질산질소 : 0.952
