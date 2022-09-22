@@ -6,25 +6,31 @@ from tqdm import tqdm
 
 
 class LSTMRegressor(nn.Module):
-    def __init__(self, feature_len, h_len=2, n_layers=2, bidirectional=False):
+    def __init__(self, feature_len, h_len=2, pred_len=720, n_layers=2, bidirectional=False):
         super(LSTMRegressor, self).__init__()
-
+        self.pred_len = pred_len
         self.lstm = nn.LSTM(input_size=feature_len, hidden_size=feature_len*h_len, num_layers=n_layers, batch_first=True, bidirectional=bidirectional)
         if bidirectional:
             self.wo = nn.Linear(in_features=feature_len*2*h_len, out_features=feature_len)
         else:
             self.wo = nn.Linear(in_features=feature_len*h_len, out_features=feature_len)
 
+        self.hidden_cell = (torch.zeros(1,64,feature_len*h_len).cuda(),
+                            torch.zeros(1,64,feature_len*h_len).cuda())
+        
     def forward(self, x):
-        out = self.wo(self.lstm(x)[0][:, -1])
+        lstm_out, self.hidden_cell = self.lstm(x, self.hidden_cell)
+        out = self.wo(lstm_out[:, -1])
         return out
 
     def predict(self, x, pred_len):
         results = []
         for _ in tqdm(range(pred_len)):
-            out = self.wo(self.lstm(x)[0][:, -1])
-            results.append(out.cpu().tolist()[0])
-            x = torch.cat([x[:, 1:], out.unsqueeze(0)], 1)
+            lstm_out, self.hidden_cell = self.lstm(x, self.hidden_cell)
+            out = self.wo(lstm_out[:, -1])
+            results.extend(out.cpu().tolist())
+            x = torch.cat([x[:, 1:], out.unsqueeze(1)], 1)
+
             del out
         return results
             
